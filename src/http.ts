@@ -1,6 +1,14 @@
 import axios from "axios";
+import { getSavedToken, saveToken } from "./utils";
 
 let token = ""
+
+{async() => {
+    const existingToken = await getSavedToken();
+    if (existingToken) {
+      token = existingToken
+    }
+}}
 
 const http = axios.create({
     baseURL: process.env.BASE_URL,
@@ -21,6 +29,7 @@ http.interceptors.request.use(
     (config) => {
         if (config.data.token){
             token = config.data.token
+            saveToken(config.data.token)
         }
         return config;
     },
