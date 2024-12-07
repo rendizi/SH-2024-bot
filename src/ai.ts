@@ -13,11 +13,12 @@ export const sendToGpt = async (messages: Message[]) => {
             {
                 headers: {
                     'api-key':process.env.AZURE_KEY || ""
-                }
+                },
+                timeout: 10000,
             })
         return response.data.choices[0].message.content 
     }catch(err){
-        console.error(err)
+        // console.error(err)
     }
 }
 
@@ -62,7 +63,7 @@ You will be provided details about the vulnerability and the target service. You
 - **Vulnerability ID**: ${exploit.vulnerability_id}
 - **Title**: ${exploit.title}
 - **Description**: ${exploit.description}
-- **Publication Date**: ${exploit.publication_date.toDateString()}
+- **Publication Date**: ${exploit.publication_date}
 - **Source Link**: ${exploit.source_link}
 - **Score**: ${exploit.score}
 - **Type**: ${exploit.type}
@@ -72,5 +73,33 @@ You will be provided details about the vulnerability and the target service. You
 - **Domain**: ${service.domain}
 
 Begin by preparing the first command to check the service and provide it in the specified JSON format. Analyze the terminal output provided by the user iteratively and guide the process accordingly.
+Return only a strictly RFC8259-compliant JSON array without any explanation, prefix, or additional text.\n6. Do not use markdown formatting in your response.
+- After two consecutive failures, clean up everything and conclude the analysis with the verdict **"potential vulnerability"**.
+git is already installed, setted up. Just git clone if needed. NEVER GENERATEW SSH-KEYGEN 
+
+Your commands are being executed like this:
+export const executeCommandInShell = (command: string) => {
+  return new Promise((resolve, reject) => {
+    const shell = spawn("sh", ["-c", command]);
+
+    let output = "";
+    let error = "";
+
+    shell.stdout.on("data", (data) => {
+      output += data.toString();
+    });
+
+    shell.stderr.on("data", (err) => {
+      error += err.toString();
+    });
+
+    shell.on("close", (code) => {
+      if (code === 0) {
+        resolve(output.trim());
+      } else {
+      }
+    });
+  });
+};
 `;
 };

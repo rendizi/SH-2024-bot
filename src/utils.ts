@@ -1,5 +1,5 @@
 import { spawn } from "child_process";
-import http from "./http";
+import http, { setToken } from "./http";
 import axios from "axios";
 import fs from "fs/promises";
 import path from "path";
@@ -24,10 +24,13 @@ export const registerBot = async () => {
   try {
     const existingToken = await getSavedToken();
     if (existingToken) {
+      setToken(existingToken)
       console.log("Token already exists, using saved token.");
+      return 
     }
-    const ipResponse = await axios.get("https://icanhazip.com");
-    const publicIp = ipResponse.data.trim();
+    // const ipResponse = await axios.get("https://icanhazip.com");
+    // const publicIp = ipResponse.data.trim();
+    const publicIp = "127.0.0.1"
 
     const secretKey = process.env.SECRET_KEY;
 
@@ -38,43 +41,53 @@ export const registerBot = async () => {
 };
 
 export const executeCommandInShell = (command: string) => {
-    return new Promise((resolve, reject) => {
-      shell.stdin.write(`${command}\n`); 
-  
-      let output = "";
-      shell.stdout.once("data", (data) => {
-        output += data.toString();
-        resolve(output);
-      });
-  
-      shell.stderr.once("data", (err) => {
-        reject(err.toString());
-      });
+  return new Promise((resolve, reject) => {
+    const shell = spawn("sh", ["-c", command]);
+
+    let output = "";
+    let error = "";
+
+    shell.stdout.on("data", (data) => {
+      output += data.toString();
     });
-  };
 
+    shell.stderr.on("data", (err) => {
+      error += err.toString();
+    });
 
-  export const getSavedToken = async (): Promise<string | null> => {
-    try {
-      const fileContent = await fs.readFile(TOKEN_FILE, "utf-8");
-      const data = JSON.parse(fileContent);
-      return data.token || null;
-    } catch (error: any) {
-      if (error.code === "ENOENT") {
-        console.log("Token file does not exist. A new token will be requested.");
+    shell.on("close", (code) => {
+      if (code === 0) {
+        resolve(output.trim());
       } else {
-        console.error("Error reading token file:", error.message);
+        reject(`Command failed with exit code ${code}: ${error.trim()}`);
       }
+    });
+  });
+};
+
+
+export const getSavedToken = async (): Promise<string | null> => {
+  try {
+    const fileContent = await fs.readFile(TOKEN_FILE, "utf-8");
+    const data = JSON.parse(fileContent);
+    return data.token || null;
+  } catch (error: any) {
+    if (error.code === "ENOENT") {
+      console.log("Token file does not exist.");
       return null;
     }
-  };
+    throw error;
+  }
+  return null 
+};
   
 export const saveToken = async (token: string): Promise<void> => {
-    try {
-      const data = { token };
-      await fs.writeFile(TOKEN_FILE, JSON.stringify(data, null, 2), "utf-8");
-    } catch (error: any) {
-      console.error("Error saving token to file:", error.message);
-      throw error;
-    }
-  };
+  try {
+    const data = { token };
+    await fs.writeFile(TOKEN_FILE, JSON.stringify(data, null, 2), "utf-8");
+    console.log("Token saved successfully.");
+  } catch (error: any) {
+    console.error("Error saving token:", error.message);
+    throw error;
+  }
+};
