@@ -129,7 +129,7 @@ const proccessCheck = async ({ exploit, service }: { exploit: Exploit; service: 
             try {
               const resp = await http.post("/bot/execution", {
                 command: data.runCommand,
-                output: result.stdout || result.stderr || "nothing",
+                output: commandResultMessage,
                 date: Date.now(),
               });
               console.log(resp.data)
